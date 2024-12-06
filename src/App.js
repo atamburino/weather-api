@@ -1,5 +1,6 @@
 import "./App.css";
 import React from "react";
+import axios from "axios"
 
 class App extends React.Component {
   constructor(props) {
@@ -8,45 +9,61 @@ class App extends React.Component {
       lat: null,
       lon: null,
       currentTemp: null,
-      weatherDescription: null
+      weatherDescription: null,
     };
   }
 
   componentDidMount() {
-    this.getCoordinatesWithFetch();
+    this.getCoordinatesWithAxios();
   }
 
   // fetch
-  getCoordinatesWithFetch = async () => {
+  getCoordinatesWithAxios = async () => {
     let apiKey = process.env.REACT_APP_WEATHER_SECRET_KEY;
     let city = "Canton";
     let url = "http://api.openweathermap.org/geo/1.0/direct";
 
     try {
-      let res = await fetch(`${url}?q=${city}&appid=${apiKey}`);
-      console.log(res);
+      const response = await axios.get(url, {
+        params: {
+          q: city,
+          appid: apiKey,
+        },
+      });
 
-      if (!res.ok) {
-        throw new Error(`Error: ${res.status} - ${res.statusText}`);
-      }
+      // With axios, we don't need to check response.ok or call .json()
+      // The data is automatically parsed and available in response.data
+      const data = response.data;
 
-      let data = await res.json();
-      console.log(data);
-      this.setState({
-        lat: data[0].lat,
-        lon: data[0].lon,
-        // After we set the latitude and longitude in our state (line 39) invoke function to get weather. 
-      }, () => this.getCurrentWeather());
+      this.setState(
+        {
+          lat: data[0].lat,
+          lon: data[0].lon,
+        },
+        () => this.getCurrentWeather()
+      );
     } catch (error) {
-      // if we get a error console log it
-      console.log(error.message);
+      if (error.response) {
+        // The request was made and the server responded with a status code
+        console.log(
+          "Error response:",
+          error.response.status,
+          error.response.data
+        );
+      } else if (error.request) {
+        // The request was made but no response was received
+        console.log("Error request:", error.request);
+      } else {
+        // Something happened in setting up the request that triggered an Error
+        console.log("Error message:", error.message);
+      }
     }
   };
 
   // Current Weather Data - This function gets the actual weather data using our coordinates
   getCurrentWeather = async () => {
-    //https://api.openweathermap.org/data/2.5/weather?lat={lat}&lon={lon}&appid={API key}
-    
+    console.log("I fired get current weather");
+
     // Various Variables
     let currentUrl = "https://api.openweathermap.org/data/2.5/weather";
     let cordLat = this.state.lat;
@@ -54,31 +71,37 @@ class App extends React.Component {
     let apiKey = process.env.REACT_APP_WEATHER_SECRET_KEY;
 
     try {
-      // makes our API call / builds the route(link) we need for the api
-      let response = await fetch(
-        // added imperial to change from Celsius to Fahrenheit
-        `${currentUrl}?lat=${cordLat}&lon=${cordLon}&appid=${apiKey}&units=imperial`
-      );
+      // With axios, we can pass the parameters in a params object
+      // This is cleaner than string interpolation
+      const response = await axios.get(currentUrl, {
+        params: {
+          lat: cordLat,
+          lon: cordLon,
+          appid: apiKey,
+          units: "imperial", // for Fahrenheit
+        },
+      });
 
-      // checks if our api call worked // if fails throws status code at my face
-      if (!response.ok) {
-        throw new Error(`Error: ${response.status}`);
-      }
+      // Axios automatically converts to JSON and throws on bad status codes
+      // So we can directly use response.data
+      const data = response.data;
 
-      // Turn the response into JSON data we can use
-      // WHY: The response is actually coming over as string text so it needs to be converted to .json.
-      let data = await response.json();
-      
-      // Save the weather info to our state!
-      // We're grabbing:
-      // - temperature from data.main.temp
-      // - weather description from data.weather[0].description
       this.setState({
         currentTemp: data.main.temp,
         weatherDescription: data.weather[0].description,
       });
     } catch (error) {
-      console.log(error.message);
+      if (error.response) {
+        // Server responded with error status
+        console.log(`Error: ${error.response.status}`);
+        console.log("Error data:", error.response.data);
+      } else if (error.request) {
+        // Request made but no response received
+        console.log("Error: No response received");
+      } else {
+        // Error in setting up the request
+        console.log("Error:", error.message);
+      }
     }
   };
 
@@ -88,7 +111,7 @@ class App extends React.Component {
         <h1>App</h1>
         <p>{`API KEY: ${process.env.REACT_APP_WEATHER_SECRET_KEY}`}</p>
         <p>{`Lat: ${this.state.lat}, Lon: ${this.state.lon}`}</p>
-        
+
         {/*
         Ternary operators if temp exists show it rounded else show "temp..."
         the rounding here is a self design choice. 
