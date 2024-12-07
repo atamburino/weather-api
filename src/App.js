@@ -2,8 +2,14 @@ import "./App.css";
 import React from "react";
 import axios from "axios";
 
+// Default city for the search TODO: swap this to a form input
 let citySearch = "new jersey";
 
+
+/**
+ * WeatherService class handles all API interactions with OpenWeatherMap
+ * Provides methods for getting geographical coordinates and current weather data
+ */
 class WeatherService {
   constructor() {
     this.API_KEY = process.env.REACT_APP_WEATHER_SECRET_KEY;
@@ -11,6 +17,8 @@ class WeatherService {
     this.WEATHER_URL = "https://api.openweathermap.org/data/2.5/weather"; // DOCS -> https://openweathermap.org/current
   }
 
+  // Generic error handler for API calls
+  // param is {Error} error - The error object from the API call
   handleError(error) {
     console.error("API Error:", error);
     if (error.response) {
@@ -18,6 +26,11 @@ class WeatherService {
     }
   }
 
+    /**
+   * Fetches geographical coordinates for a given city name
+   * param is {string} city - Name of the city to search for
+   * returns a {Promise<{lat: number, lon: number}>} Object containing latitude and longitude
+   */
   async getGeoCoordinates(city) {
     try {
       const response = await axios.get(this.GEO_URL, {
@@ -40,6 +53,12 @@ class WeatherService {
     }
   }
 
+    /**
+   * Fetches current weather data for given coordinates
+   * param {number} lat - Latitude
+   * param {number} lon - Longitude
+   * returns {Promise<Object>} Formatted weather data including temperature, conditions, etc.
+   */
   async getCurrentWeather(lat, lon) {
     console.log("this is the console log for current weather");
     try {
@@ -55,6 +74,7 @@ class WeatherService {
       // console.log("getCurrentWeather Full response:", currentWeatherResponse); // Log the entire response
       // console.log("getCurrentWeather Response data:", currentWeatherResponse.data); // Log just the data portion
 
+      // Format the weather data for easier use in the application
       const currentWeatherData = {
         temperature: currentWeatherResponse.data.main.temp,
         feels_like: currentWeatherResponse.data.main.feels_like,
@@ -91,6 +111,11 @@ class WeatherService {
 //     console.error("Geo Error:", error);
 //   });
 
+
+/**
+ * Main App component for the weather application
+ * Manages the state and rendering of weather info
+ */
 class App extends React.Component {
   constructor(props) {
     super(props);
@@ -106,31 +131,36 @@ class App extends React.Component {
       isLoading: true,
       error: null,
     };
+    // Create instance of WeatherService for API calls
     this.weatherService = new WeatherService();
   }
 
+  /**
+   * Lifecycle method that runs after component mounts
+   * Fetches initial weather data for the default city
+   */
   async componentDidMount() {
     try {
       const citySearch = "new jersey"; // You might want to make this configurable
 
-      // First get coordinates
+      // First get the geographical coordinates for the city
       const coordinates = await this.weatherService.getGeoCoordinates(
         citySearch
       );
 
-      // Update coordinates in state
+      // Update state with coordinates
       this.setState({
         lat: coordinates.lat,
         lon: coordinates.lon,
       });
 
-      // Then get weather data
+      // Fetch weather data using the coordinates
       const weatherData = await this.weatherService.getCurrentWeather(
         coordinates.lat,
         coordinates.lon
       );
 
-      // Update all weather data in state
+      // Update state with all weather information
       this.setState({
         currentTemp: weatherData.temperature,
         feelsLike: weatherData.feels_like,
@@ -140,7 +170,10 @@ class App extends React.Component {
         weatherIcon: weatherData.weather_icon,
         isLoading: false,
       });
+
+
     } catch (error) {
+      // Handle any errors during data fetching
       this.setState({
         error: "Failed to load weather data",
         isLoading: false,
@@ -149,17 +182,24 @@ class App extends React.Component {
     }
   }
 
+  /**
+   * Render method for displaying weather information
+   * Includes loading and error states
+   */
   render() {
     const { isLoading, error } = this.state;
 
+    // Show loading message while data is being fetched
     if (isLoading) {
       return <div>Loading weather data...</div>;
     }
 
+    // Show error message if data fetch failed
     if (error) {
       return <div>Error: {error}</div>;
     }
 
+    // Render weather information
     return (
       <div className="App">
         <h1>Weather App</h1>
@@ -169,15 +209,18 @@ class App extends React.Component {
         )}`}</p>
 
         <div className="weather-info">
+          {/* Display current temperature */}
           <p className="current-temp">
             {this.state.currentTemp &&
               `Current temperature: ${Math.round(this.state.currentTemp)}°F`}
           </p>
           <p className="feels-like">
+            {/* Display feels-like temperature */}
             {this.state.feelsLike &&
               `Feels like: ${Math.round(this.state.feelsLike)}°F`}
           </p>
           <p className="high-low">
+            {/* Display high and low temperatures */}
             {this.state.highTemp &&
               this.state.lowTemp &&
               `High: ${Math.round(this.state.highTemp)}°F / Low: ${Math.round(
@@ -185,9 +228,11 @@ class App extends React.Component {
               )}°F`}
           </p>
           <p className="conditions">
+            {/* Display weather conditions */}
             {this.state.weatherDescription &&
               `Conditions: ${this.state.weatherDescription}`}
           </p>
+          {/* Display weather icon if available */}
           {this.state.weatherIcon && (
             <img
               src={`http://openweathermap.org/img/w/${this.state.weatherIcon}.png`} // https://openweathermap.org/weather-conditions
