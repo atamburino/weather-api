@@ -1,6 +1,95 @@
 import "./App.css";
 import React from "react";
-import axios from "axios"
+import axios from "axios";
+
+let citySearch = "new jersey";
+
+class WeatherService {
+  constructor() {
+    this.API_KEY = process.env.REACT_APP_WEATHER_SECRET_KEY;
+    this.GEO_URL = "http://api.openweathermap.org/geo/1.0/direct";
+    this.WEATHER_URL = "https://api.openweathermap.org/data/2.5/weather"; // DOCS -> https://openweathermap.org/current
+  }
+
+  handleError(error) {
+    console.error("API Error:", error);
+    if (error.response) {
+      console.error("Error response:", error.response.data);
+    }
+  }
+
+  async getGeoCoordinates(city) {
+    try {
+      const response = await axios.get(this.GEO_URL, {
+        params: {
+          q: city,
+          appid: this.API_KEY,
+        },
+      });
+
+      // console.log("getGeoCoordinates Full response:", response); // Log the entire response
+      // console.log("getGeoCoordinates Response data:", response.data); // Log just the data portion
+
+      return {
+        lat: response.data[0].lat,
+        lon: response.data[0].lon,
+      };
+    } catch (error) {
+      this.handleError(error);
+      throw error;
+    }
+  }
+
+  async getCurrentWeather(lat, lon) {
+    console.log("this is the console log for current weather");
+    try {
+      const currentWeatherResponse = await axios.get(this.WEATHER_URL, {
+        params: {
+          lat,
+          lon,
+          appid: this.API_KEY,
+          units: "imperial", // for Fahrenheit
+        },
+      });
+
+      // console.log("getCurrentWeather Full response:", currentWeatherResponse); // Log the entire response
+      // console.log("getCurrentWeather Response data:", currentWeatherResponse.data); // Log just the data portion
+
+      const currentWeatherData = {
+        temperature: currentWeatherResponse.data.main.temp,
+        feels_like: currentWeatherResponse.data.main.feels_like,
+        todays_high: currentWeatherResponse.data.main.temp_max,
+        todays_low: currentWeatherResponse.data.main.temp_min,
+        weather_conditions: currentWeatherResponse.data.weather[0].description,
+        weather_icon: currentWeatherResponse.data.weather[0].icon,
+      };
+
+      // // Logging returned results from get current weather data
+      // console.log("Formatted Weather Data:", currentWeatherData);
+
+      return currentWeatherData;
+    } catch (error) {
+      this.handleError(error);
+      throw error;
+    }
+  }
+}
+
+///////////////////////////////////////////////
+// Create an instance of WeatherService -- I used this as i was building the version for axios/testing
+// const weatherService = new WeatherService();
+///////////////////////////////////////////////
+
+// This was used when converting code to axios
+// weatherService
+//   .getGeoCoordinates(citySearch)
+//   .then((coordinates) => {
+//     console.log("Coordinates:", coordinates);
+//     return weatherService.getCurrentWeather(coordinates.lat, coordinates.lon);
+//   })
+//   .catch((error) => {
+//     console.error("Geo Error:", error);
+//   });
 
 class App extends React.Component {
   constructor(props) {
@@ -9,129 +98,103 @@ class App extends React.Component {
       lat: null,
       lon: null,
       currentTemp: null,
+      feelsLike: null,
+      highTemp: null,
+      lowTemp: null,
       weatherDescription: null,
+      weatherIcon: null,
+      isLoading: true,
+      error: null,
     };
+    this.weatherService = new WeatherService();
   }
 
-  componentDidMount() {
-    this.getCoordinatesWithAxios();
-  }
-
-  // fetch
-  getCoordinatesWithAxios = async () => {
-    let apiKey = process.env.REACT_APP_WEATHER_SECRET_KEY;
-    let city = "Canton";
-    let url = "http://api.openweathermap.org/geo/1.0/direct";
-
+  async componentDidMount() {
     try {
-      const response = await axios.get(url, {
-        params: {
-          q: city,
-          appid: apiKey,
-        },
-      });
+      const citySearch = "new jersey"; // You might want to make this configurable
 
-      // With axios, we don't need to check response.ok or call .json()
-      // The data is automatically parsed and available in response.data
-      const data = response.data;
-
-      this.setState(
-        {
-          lat: data[0].lat,
-          lon: data[0].lon,
-        },
-        () => this.getCurrentWeather()
+      // First get coordinates
+      const coordinates = await this.weatherService.getGeoCoordinates(
+        citySearch
       );
-    } catch (error) {
-      if (error.response) {
-        // The request was made and the server responded with a status code
-        console.log(
-          "Error response:",
-          error.response.status,
-          error.response.data
-        );
-      } else if (error.request) {
-        // The request was made but no response was received
-        console.log("Error request:", error.request);
-      } else {
-        // Something happened in setting up the request that triggered an Error
-        console.log("Error message:", error.message);
-      }
-    }
-  };
 
-  // Current Weather Data - This function gets the actual weather data using our coordinates
-  getCurrentWeather = async () => {
-    console.log("I fired get current weather");
-
-    // Various Variables
-    let currentUrl = "https://api.openweathermap.org/data/2.5/weather";
-    let cordLat = this.state.lat;
-    let cordLon = this.state.lon;
-    let apiKey = process.env.REACT_APP_WEATHER_SECRET_KEY;
-
-    try {
-      // With axios, we can pass the parameters in a params object
-      // This is cleaner than string interpolation
-      const response = await axios.get(currentUrl, {
-        params: {
-          lat: cordLat,
-          lon: cordLon,
-          appid: apiKey,
-          units: "imperial", // for Fahrenheit
-        },
-      });
-
-      // Axios automatically converts to JSON and throws on bad status codes
-      // So we can directly use response.data
-      const data = response.data;
-
+      // Update coordinates in state
       this.setState({
-        currentTemp: data.main.temp,
-        weatherDescription: data.weather[0].description,
+        lat: coordinates.lat,
+        lon: coordinates.lon,
+      });
+
+      // Then get weather data
+      const weatherData = await this.weatherService.getCurrentWeather(
+        coordinates.lat,
+        coordinates.lon
+      );
+
+      // Update all weather data in state
+      this.setState({
+        currentTemp: weatherData.temperature,
+        feelsLike: weatherData.feels_like,
+        highTemp: weatherData.todays_high,
+        lowTemp: weatherData.todays_low,
+        weatherDescription: weatherData.weather_conditions,
+        weatherIcon: weatherData.weather_icon,
+        isLoading: false,
       });
     } catch (error) {
-      if (error.response) {
-        // Server responded with error status
-        console.log(`Error: ${error.response.status}`);
-        console.log("Error data:", error.response.data);
-      } else if (error.request) {
-        // Request made but no response received
-        console.log("Error: No response received");
-      } else {
-        // Error in setting up the request
-        console.log("Error:", error.message);
-      }
+      this.setState({
+        error: "Failed to load weather data",
+        isLoading: false,
+      });
+      console.error("Error fetching weather data:", error);
     }
-  };
+  }
 
   render() {
+    const { isLoading, error } = this.state;
+
+    if (isLoading) {
+      return <div>Loading weather data...</div>;
+    }
+
+    if (error) {
+      return <div>Error: {error}</div>;
+    }
+
     return (
       <div className="App">
-        <h1>App</h1>
-        <p>{`API KEY: ${process.env.REACT_APP_WEATHER_SECRET_KEY}`}</p>
-        <p>{`Lat: ${this.state.lat}, Lon: ${this.state.lon}`}</p>
+        <h1>Weather App</h1>
+        {/* <p>{`API KEY: ${process.env.REACT_APP_WEATHER_SECRET_KEY}`}</p> */}
+        <p>{`Location: ${this.state.lat?.toFixed(2)}, ${this.state.lon?.toFixed(
+          2
+        )}`}</p>
 
-        {/*
-        Ternary operators if temp exists show it rounded else show "temp..."
-        the rounding here is a self design choice. 
-        
-        Math.round() follows standard rounding rules:
-          72.5 and above rounds up to 73
-          72.4 and below rounds down to 72
-        */}
-
-        <p>
-          {this.state.currentTemp
-            ? `Current temperature: ${Math.round(this.state.currentTemp)}°F`
-            : "temp..."}
-        </p>
-        {/* Ternary operators if conditions exists show it, else show "conditions..." */}
-        <p>
-          {this.state.weatherDescription
-            ? `Weather conditions: ${this.state.weatherDescription}`
-            : "conditions..."}
-        </p>
+        <div className="weather-info">
+          <p className="current-temp">
+            {this.state.currentTemp &&
+              `Current temperature: ${Math.round(this.state.currentTemp)}°F`}
+          </p>
+          <p className="feels-like">
+            {this.state.feelsLike &&
+              `Feels like: ${Math.round(this.state.feelsLike)}°F`}
+          </p>
+          <p className="high-low">
+            {this.state.highTemp &&
+              this.state.lowTemp &&
+              `High: ${Math.round(this.state.highTemp)}°F / Low: ${Math.round(
+                this.state.lowTemp
+              )}°F`}
+          </p>
+          <p className="conditions">
+            {this.state.weatherDescription &&
+              `Conditions: ${this.state.weatherDescription}`}
+          </p>
+          {this.state.weatherIcon && (
+            <img
+              src={`http://openweathermap.org/img/w/${this.state.weatherIcon}.png`} // https://openweathermap.org/weather-conditions
+              alt="Weather icon"
+            />
+          )}
+        </div>
       </div>
     );
   }
