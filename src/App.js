@@ -2,8 +2,8 @@ import "./App.css";
 import React from "react";
 import axios from "axios";
 
-// Default city for the search TODO: swap this to a form input
-let citySearch = "new jersey";
+// // Default city for the search TODO: swap this to a form input
+// let citySearch = "new jersey";
 
 
 /**
@@ -141,7 +141,7 @@ class App extends React.Component {
    */
   async componentDidMount() {
     try {
-      const citySearch = "new jersey"; // You might want to make this configurable
+      const citySearch = "new jersey"; 
 
       // First get the geographical coordinates for the city
       const coordinates = await this.weatherService.getGeoCoordinates(
