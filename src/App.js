@@ -1,6 +1,7 @@
 import "./App.css";
 import React from "react";
 import axios from "axios";
+import ProductCard from "./Components/ProductCard";
 
 // // Default city for the search TODO: swap this to a form input
 // let citySearch = "new jersey";
@@ -240,6 +241,7 @@ class App extends React.Component {
             />
           )}
         </div>
+        <ProductCard/>
       </div>
     );
   }
