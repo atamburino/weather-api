@@ -241,7 +241,7 @@ class App extends React.Component {
             />
           )}
         </div>
-        <ProductCard/>
+        <ProductCard />
       </div>
     );
   }

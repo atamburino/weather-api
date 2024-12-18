@@ -1,9 +1,13 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 
-function ProductCard() {
+function ProductCard({ product: { name, price, description, companyName } }) {
+
+
     return (
         <div>
-            <p>Product card</p>
+            <p>{name}</p>
+            <p>{description}</p>
+            <p>{companyName}</p>
         </div>
     )
 };
