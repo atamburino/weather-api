@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from "react";
 
 function ProductCard({ product: { name, price, description, companyName } }) {
-
-
     return (
         <div>
             <p>{name}</p>
@@ -12,4 +10,4 @@ function ProductCard({ product: { name, price, description, companyName } }) {
     )
 };
 
-export default ProductCard
+export default ProductCard;
