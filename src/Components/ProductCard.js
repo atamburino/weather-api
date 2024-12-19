@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import './ProductCard.css'
 
 function ProductCard({ product: { name, price, description, companyName } }) {
     return (

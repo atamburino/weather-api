@@ -1,0 +1,46 @@
+/* ProductCard.css */
+
+.product-card {
+    background-color: #fff;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 20px;
+    margin: 10px;
+    width: 100%;
+    max-width: 250px;
+    text-align: center;
+}
+
+.product-name {
+    font-size: 1.25rem;
+    font-weight: bold;
+    margin: 10px 0;
+}
+
+.product-price {
+    color: #007bff;
+    font-size: 1.1rem;
+    margin: 5px 0;
+}
+
+.product-description {
+    font-size: 0.9rem;
+    color: #555;
+    margin: 10px 0;
+}
+
+.product-company {
+    font-size: 0.85rem;
+    color: #777;
+    margin-top: 10px;
+}
+
+/* Grid Layout */
+.product-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 20px;
+    padding: 20px;
+    justify-items: center;
+}
+
