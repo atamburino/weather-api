@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import './ProductCard.css'
 
+// This component is my template for each product passed through this
 function ProductCard({ product: { name, price, description, companyName } }) {
     return (
         <div className="product-card">
